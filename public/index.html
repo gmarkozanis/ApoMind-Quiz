@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ApoMind Ψηφιακός Βοηθός</title>
+  <style>
+    :root {
+      --bg: #08111e; --panel: rgba(10,18,34,0.55); --line: rgba(255,255,255,0.12);
+      --text: #eef4ff; --muted: #adc0db; --primary: #4c9fff; --primary-2: #7c5cff;
+      --shadow: 0 25px 80px rgba(0,0,0,0.42); --success: #32d583; --danger: #ff5e6c;
+    }
+    * { box-sizing: border-box; }
+    html,body { margin:0; min-height:100%; font-family:Inter,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    body::before { content:""; position:fixed; inset:0; background:linear-gradient(135deg,rgba(5,10,20,.92),rgba(8,18,34,.74)); z-index:-3; transform:scale(1.03); }
+    body::after  { content:""; position:fixed; inset:0; z-index:-2; pointer-events:none; background:radial-gradient(circle at 20% 25%,rgba(76,159,255,.18),transparent 28%),radial-gradient(circle at 80% 18%,rgba(124,92,255,.16),transparent 26%),radial-gradient(circle at 50% 85%,rgba(255,255,255,.06),transparent 24%); }
+    .page { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 18px; }
+    .shell { width:min(1150px,100%); padding:34px; border-radius:34px; border:1px solid var(--line); background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03)); backdrop-filter:blur(18px); box-shadow:var(--shadow); }
+    .title { text-align:center; margin:0 0 10px; font-size:clamp(2rem,4vw,3.4rem); letter-spacing:-1.5px; font-weight:800; }
+    .subtitle { text-align:center; color:var(--muted); margin:0 0 22px; font-size:.98rem; }
+    .title span { background:linear-gradient(135deg,#fff,#b9d8ff 45%,#9eabff 75%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .tab-bar { display:flex; justify-content:center; gap:10px; margin:0 0 26px; }
+    .tab-btn { padding:10px 28px; border-radius:50px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05); color:var(--muted); font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; }
+    .tab-btn:hover { color:var(--text); border-color:rgba(255,255,255,.28); }
+    .tab-btn.active { background:linear-gradient(135deg,var(--primary),var(--primary-2)); border-color:transparent; color:#fff; box-shadow:0 8px 22px rgba(76,159,255,.32); }
+    .hero { display:grid; grid-template-columns:420px 1fr; align-items:center; gap:26px; }
+    .mascot-wrap { display:flex; align-items:center; justify-content:center; position:relative; min-height:520px; }
+    .mascot-wrap::before { content:""; position:absolute; width:420px; height:420px; border-radius:999px; background:radial-gradient(circle,rgba(76,159,255,.16),transparent 65%); filter:blur(12px); }
+    .mascot { width:min(390px,100%); position:relative; z-index:2; object-fit:contain; filter:drop-shadow(0 24px 40px rgba(0,0,0,.42)); }
+    /* CARD SHARED */
+    .chat-card,.quiz-card { min-height:520px; display:flex; flex-direction:column; border-radius:28px; border:1px solid rgba(255,255,255,.1); background:var(--panel); backdrop-filter:blur(16px); box-shadow:var(--shadow); overflow:hidden; }
+    /* CHAT */
+    .chat-head,.quiz-head { padding:20px 22px; border-bottom:1px solid rgba(255,255,255,.08); font-weight:700; color:#dbe8ff; display:flex; align-items:center; gap:10px; }
+    .chat-head::before { content:""; width:10px; height:10px; border-radius:999px; background:#32d583; box-shadow:0 0 0 7px rgba(50,213,131,.12); }
+    .messages { flex:1; padding:22px; overflow-y:auto; display:flex; flex-direction:column; gap:14px; }
+    .message { max-width:82%; padding:14px 16px; border-radius:18px; line-height:1.7; white-space:pre-wrap; font-size:.98rem; }
+    .bot { align-self:flex-start; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.08); color:#eff5ff; border-bottom-left-radius:8px; }
+    .user { align-self:flex-end; background:linear-gradient(135deg,var(--primary),var(--primary-2)); color:#fff; border-bottom-right-radius:8px; }
+    .typing { display:none; padding:0 22px 14px; color:var(--muted); font-size:.95rem; align-items:center; gap:8px; }
+    .typing.visible { display:flex; }
+    .dots { display:inline-flex; gap:5px; }
+    .dots span { width:7px; height:7px; border-radius:999px; background:#dce8ff; opacity:.4; animation:blink 1.2s infinite; }
+    .dots span:nth-child(2){animation-delay:.2s} .dots span:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+    .composer { padding:16px; border-top:1px solid rgba(255,255,255,.08); background:rgba(7,13,24,.3); }
+    .composer-inner { display:grid; grid-template-columns:1fr 62px; gap:12px; align-items:center; padding:10px; border-radius:22px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); }
+    input[type=text] { width:100%; height:52px; background:transparent; border:0; outline:none; color:#fff; font-size:1rem; padding:0 12px; }
+    input[type=text]::placeholder{color:#99adca}
+    .send { width:52px; height:52px; border:0; border-radius:16px; cursor:pointer; color:#fff; background:linear-gradient(135deg,var(--primary),var(--primary-2)); box-shadow:0 12px 28px rgba(76,159,255,.28); font-size:1.2rem; font-weight:700; }
+    .send:disabled{opacity:.65;cursor:not-allowed}
+    /* QUIZ */
+    .quiz-head { justify-content:space-between; }
+    .quiz-head-left { display:flex; align-items:center; gap:8px; }
+    .quiz-head-left::before{content:"🎯"}
+    .quiz-progress-label{font-size:.85rem;color:var(--muted);font-weight:500}
+    .quiz-body{flex:1;padding:28px;overflow-y:auto;display:flex;flex-direction:column;gap:18px}
+    /* start */
+    .quiz-start{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;flex:1;text-align:center;padding:20px}
+    .quiz-start h2{font-size:1.5rem;font-weight:800;margin:0;background:linear-gradient(135deg,#fff,#b9d8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .quiz-start p{color:var(--muted);margin:0;line-height:1.7}
+    .quiz-count-row{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.95rem}
+    .quiz-count-row select{background:#0d1a2e;border:1px solid rgba(255,255,255,.18);color:#fff;padding:8px 14px;border-radius:12px;font-size:.95rem;cursor:pointer;outline:none}
+    .quiz-count-row select option{background:#0d1a2e;color:#eef4ff;}
+    .btn-start{padding:15px 44px;border-radius:50px;border:0;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer;box-shadow:0 12px 30px rgba(76,159,255,.35);transition:transform .15s,box-shadow .15s}
+    .btn-start:hover{transform:translateY(-2px);box-shadow:0 16px 36px rgba(76,159,255,.42)}
+    .btn-start:disabled{opacity:.6;cursor:not-allowed;transform:none}
+    /* question */
+    .quiz-question-number{font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;color:var(--primary);font-weight:700}
+    .quiz-question-text{font-size:1.08rem;font-weight:600;line-height:1.6;color:#eff5ff;margin:0}
+    .quiz-progress-bar-wrap{background:rgba(255,255,255,.08);border-radius:99px;height:5px;overflow:hidden}
+    .quiz-progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-2));border-radius:99px;transition:width .4s ease}
+    .options-grid{display:flex;flex-direction:column;gap:10px}
+    .option-btn{display:flex;align-items:center;gap:14px;padding:15px 18px;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text);font-size:.97rem;text-align:left;cursor:pointer;transition:all .18s;line-height:1.5}
+    .option-btn:hover:not(:disabled){background:rgba(76,159,255,.12);border-color:rgba(76,159,255,.4)}
+    .option-letter{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.08);font-weight:700;font-size:.9rem;flex-shrink:0;transition:all .18s}
+    .option-btn.correct{background:rgba(50,213,131,.14);border-color:rgba(50,213,131,.45);color:#a8ffda}
+    .option-btn.correct .option-letter{background:rgba(50,213,131,.3);color:var(--success)}
+    .option-btn.wrong{background:rgba(255,94,108,.14);border-color:rgba(255,94,108,.45);color:#ffb4bc}
+    .option-btn.wrong .option-letter{background:rgba(255,94,108,.3);color:var(--danger)}
+    .option-btn:disabled{cursor:default}
+    .explanation{padding:14px 18px;border-radius:16px;background:rgba(76,159,255,.1);border:1px solid rgba(76,159,255,.22);color:#c0dcff;font-size:.92rem;line-height:1.65;animation:fadeIn .3s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .btn-next{align-self:flex-end;padding:12px 30px;border-radius:50px;border:0;background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;box-shadow:0 8px 22px rgba(76,159,255,.28);transition:transform .15s}
+    .btn-next:hover{transform:translateY(-2px)}
+    /* results */
+    .quiz-results{display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;animation:fadeIn .4s ease}
+    .score-ring{position:relative;width:130px;height:130px}
+    .score-ring svg{transform:rotate(-90deg)}
+    .score-ring-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .score-number{font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--primary-2));-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1}
+    .score-label{font-size:.78rem;color:var(--muted);margin-top:2px}
+    .results-title{font-size:1.4rem;font-weight:800;margin:0}
+    .feedback-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:18px 22px;color:var(--muted);font-size:.95rem;line-height:1.7;text-align:left;max-width:480px;min-height:60px}
+    .results-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+    .btn-outline{padding:12px 28px;border-radius:50px;border:1px solid rgba(255,255,255,.2);background:transparent;color:var(--text);font-size:.95rem;font-weight:600;cursor:pointer;transition:all .18s}
+    .btn-outline:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.35)}
+    /* loading */
+    .quiz-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;flex:1;color:var(--muted);font-size:.95rem;animation:fadeIn .3s ease}
+    .quiz-spinner{width:44px;height:44px;border:3px solid rgba(76,159,255,.2);border-top-color:var(--primary);border-radius:50%;animation:spin .9s linear infinite}
+    .quiz-spinner.sm{width:24px;height:24px;border-width:2px;margin:auto}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    /* tabs */
+    .tab-panel{display:none} .tab-panel.active{display:block}
+    /* responsive */
+    @media(max-width:980px){.hero{grid-template-columns:1fr}.mascot-wrap{min-height:auto}.mascot{width:min(320px,75vw)}.chat-card,.quiz-card{min-height:460px}}
+    @media(max-width:640px){.shell{padding:20px;border-radius:24px}.messages,.quiz-body{padding:16px}.message{max-width:90%}.tab-btn{padding:9px 18px;font-size:.88rem}}
+  </style>
+</head>
+<body>
+<div class="page"><div class="shell">
+  <h1 class="title"><span>ApoMind</span> Ψηφιακός Βοηθός</h1>
+  <p class="subtitle">Ρώτησε ό,τι θέλεις ή δοκίμασε τις γνώσεις σου κάνοντας ένα Quiz!</p>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="chat">💬 Συνομιλία</button>
+    <button class="tab-btn" data-tab="quiz">🎯 Quiz Γνώσεων</button>
+  </div>
+
+  <!-- CHAT -->
+  <div class="tab-panel active" id="tab-chat">
+    <section class="hero">
+      <div class="mascot-wrap"><img src="/mascot.jpg" alt="ApoMind mascot" class="mascot"/></div>
+      <div class="chat-card">
+        <div class="chat-head">Συνομιλία</div>
+        <div class="messages" id="messages">
+          <div class="message bot">Γεια σου! Είμαι ο ApoMind, ο Ψηφιακός σου Βοηθός. Γράψε την απορία σου και θα σου απαντήσω αμέσως.</div>
+        </div>
+        <div class="typing" id="typing"><div class="dots"><span></span><span></span><span></span></div>Ο βοηθός γράφει...</div>
+        <div class="composer"><div class="composer-inner">
+          <input id="prompt" type="text" placeholder="Γράψε εδώ το μήνυμά σου..."/>
+          <button class="send" id="sendBtn">➜</button>
+        </div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="tab-panel" id="tab-quiz">
+    <section class="hero">
+      <div class="mascot-wrap"><img src="/mascot.jpg" alt="ApoMind mascot" class="mascot"/></div>
+      <div class="quiz-card">
+        <div class="quiz-head">
+          <div class="quiz-head-left">Quiz Γνώσεων</div>
+          <span class="quiz-progress-label" id="quizProgressLabel"></span>
+        </div>
+        <div class="quiz-body" id="quizBody"></div>
+      </div>
+    </section>
+  </div>
+
+</div></div>
+
+<script>
+/* TABS */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='quiz' && quizState.phase==='idle') showQuizStart();
+  });
+});
+
+/* CHAT */
+const messagesEl=document.getElementById('messages');
+const promptEl=document.getElementById('prompt');
+const sendBtn=document.getElementById('sendBtn');
+const typingEl=document.getElementById('typing');
+function addMessage(role,text){const d=document.createElement('div');d.className='message '+role;d.textContent=text;messagesEl.appendChild(d);messagesEl.scrollTop=messagesEl.scrollHeight;}
+async function sendMessage(){
+  const text=promptEl.value.trim(); if(!text)return;
+  addMessage('user',text); promptEl.value=''; sendBtn.disabled=true; typingEl.classList.add('visible');
+  try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data?.details||data?.error||'API error');
+    addMessage('bot',data.reply||'Δεν υπάρχει απάντηση.');
+  }catch(e){addMessage('bot','Σφάλμα: '+e.message);}
+  finally{typingEl.classList.remove('visible');sendBtn.disabled=false;promptEl.focus();}
+}
+sendBtn.addEventListener('click',sendMessage);
+promptEl.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();sendMessage();}});
+
+/* QUIZ */
+const quizBody=document.getElementById('quizBody');
+const quizLabel=document.getElementById('quizProgressLabel');
+const quizState={phase:'idle',questions:[],current:0,score:0,wrongTopics:[],answered:false};
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function setLabel(t){quizLabel.textContent=t;}
+
+function showQuizStart(){
+  quizState.phase='idle'; setLabel('');
+  quizBody.innerHTML=`
+    <div class="quiz-start">
+      <p>Ο ApoMind θα δημιουργήσει ερωτήσεις αποκλειστικά από την θεωρία και θα ελέγξει τι έχεις καταλάβει!</p>
+      <div class="quiz-count-row">
+        <span>Αριθμός ερωτήσεων:</span>
+        <select id="quizCountSel">
+          <option value="3">3</option><option value="5" selected>5</option>
+          <option value="7">7</option><option value="10">10</option>
+        </select>
+      </div>
+      <button class="btn-start" id="startQuizBtn">Έναρξη Quiz ➜</button>
+    </div>`;
+  document.getElementById('startQuizBtn').addEventListener('click',()=>{
+    startQuiz(parseInt(document.getElementById('quizCountSel').value));
+  });
+}
+
+async function startQuiz(count){
+  quizState.phase='loading'; quizState.score=0; quizState.wrongTopics=[]; quizState.current=0; quizState.answered=false; setLabel('');
+  quizBody.innerHTML=`<div class="quiz-loading"><div class="quiz-spinner"></div><span>Δημιουργία ${count} ερωτήσεων από το έγγραφο γνώσης…</span></div>`;
+  try{
+    const res=await fetch('/api/quiz/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({count})});
+    const data=await res.json();
+    if(!res.ok||!data.quiz?.questions?.length)throw new Error(data.error||'Αποτυχία δημιουργίας quiz.');
+    quizState.questions=data.quiz.questions; quizState.phase='question'; showQuestion();
+  }catch(err){
+    quizBody.innerHTML=`<div class="quiz-start"><p style="color:var(--danger)">⚠️ ${esc(err.message)}</p><button class="btn-start" onclick="showQuizStart()">Δοκίμασε ξανά</button></div>`;
+  }
+}
+
+function showQuestion(){
+  const q=quizState.questions[quizState.current];
+  const total=quizState.questions.length;
+  const pct=Math.round((quizState.current/total)*100);
+  quizState.answered=false;
+  setLabel(`${quizState.current+1} / ${total}`);
+  quizBody.innerHTML=`
+    <div class="quiz-question-number">Ερώτηση ${quizState.current+1} από ${total}</div>
+    <div class="quiz-progress-bar-wrap"><div class="quiz-progress-bar" style="width:${pct}%"></div></div>
+    <p class="quiz-question-text">${esc(q.question)}</p>
+    <div class="options-grid" id="optionsGrid">
+      ${Object.entries(q.options).map(([l,t])=>`
+        <button class="option-btn" data-letter="${l}">
+          <span class="option-letter">${l}</span><span>${esc(t)}</span>
+        </button>`).join('')}
+    </div>`;
+  document.querySelectorAll('.option-btn').forEach(btn=>btn.addEventListener('click',()=>handleAnswer(btn.dataset.letter)));
+}
+
+function handleAnswer(chosen){
+  if(quizState.answered)return; quizState.answered=true;
+  const q=quizState.questions[quizState.current];
+  const correct=q.correct; const ok=chosen===correct;
+  if(ok) quizState.score++; else quizState.wrongTopics.push(q.question.substring(0,60));
+  document.querySelectorAll('.option-btn').forEach(btn=>{
+    btn.disabled=true;
+    if(btn.dataset.letter===correct) btn.classList.add('correct');
+    else if(btn.dataset.letter===chosen&&!ok) btn.classList.add('wrong');
+  });
+  const grid=document.getElementById('optionsGrid');
+  const expl=document.createElement('div'); expl.className='explanation';
+  expl.textContent=(ok?'✅ Σωστά! ':'❌ Λάθος. ')+(q.explanation||'');
+  grid.insertAdjacentElement('afterend',expl);
+  const isLast=quizState.current===quizState.questions.length-1;
+  const nextBtn=document.createElement('button'); nextBtn.className='btn-next';
+  nextBtn.textContent=isLast?'Δες αποτελέσματα 🏆':'Επόμενη ➜';
+  nextBtn.addEventListener('click',()=>{quizState.current++;isLast?showResults():showQuestion();});
+  quizBody.appendChild(nextBtn); quizBody.scrollTop=quizBody.scrollHeight;
+}
+
+async function showResults(){
+  quizState.phase='results';
+  const score=quizState.score; const total=quizState.questions.length;
+  const pct=Math.round((score/total)*100);
+  const r=54; const circ=2*Math.PI*r; const dash=Math.round((pct/100)*circ);
+  setLabel('Αποτελέσματα');
+  const emoji=pct>=80?'🏆':pct>=50?'👍':'📚';
+  const title=pct>=80?'Εξαιρετική επίδοση!':pct>=50?'Καλή προσπάθεια!':'Χρειάζεται μελέτη!';
+  quizBody.innerHTML=`
+    <div class="quiz-results">
+      <div class="score-ring">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="${r}" stroke="rgba(255,255,255,0.08)" stroke-width="10" fill="none"/>
+          <circle cx="65" cy="65" r="${r}" stroke="url(#g)" stroke-width="10" fill="none"
+            stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+          <defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#4c9fff"/><stop offset="100%" stop-color="#7c5cff"/>
+          </linearGradient></defs>
+        </svg>
+        <div class="score-ring-text">
+          <span class="score-number">${score}/${total}</span>
+          <span class="score-label">${pct}%</span>
+        </div>
+      </div>
+      <p class="results-title">${emoji} ${title}</p>
+      <div class="feedback-box" id="feedbackBox"><div class="quiz-spinner sm"></div></div>
+      <div class="results-actions">
+        <button class="btn-start" onclick="startQuiz(${total})">🔄 Ξανά Quiz</button>
+        <button class="btn-outline" onclick="showQuizStart()">Αλλαγή ρυθμίσεων</button>
+      </div>
+    </div>`;
+  try{
+    const res=await fetch('/api/quiz/evaluate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({score,total,wrong_topics:quizState.wrongTopics})});
+    const data=await res.json();
+    document.getElementById('feedbackBox').textContent=data.feedback||'';
+  }catch{document.getElementById('feedbackBox').textContent=`Απάντησες σωστά σε ${score} από τις ${total} ερωτήσεις.`;}
+}
+
+showQuizStart();
+</script>
+</body>
+</html>
